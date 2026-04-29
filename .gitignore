@@ -1,0 +1,11 @@
+target/
+bin/
+*.class
+.vscode/
+.idea/
+*.iml
+.settings/
+.project
+.classpath
+examgrid_db.*
+*.log
