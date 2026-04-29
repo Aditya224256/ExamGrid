@@ -19,11 +19,11 @@ window.onload = async function () {
     }
 
     // Load session first
-    currentSession = localStorage.getItem("currentSession") || "Morning";
+    currentSession = sessionStorage.getItem("currentSession") || "Morning";
     const sessionRadio = document.getElementById(currentSession.toLowerCase());
     if (sessionRadio) sessionRadio.checked = true;
 
-    // Load from LocalStorage (session-prefixed)
+    // Load from sessionStorage (session-prefixed)
     await loadSessionData();
 
     await syncWithBackend();
@@ -38,14 +38,14 @@ window.onload = async function () {
 };
 
 function getUserPrefix() {
-    const userJson = localStorage.getItem("loggedInUser");
+    const userJson = sessionStorage.getItem("loggedInUser");
     if (!userJson) return "";
     const user = JSON.parse(userJson);
     return user.user + "_" + currentSession.toLowerCase() + "_";
 }
 
 function getTeacherUsername() {
-    const userJson = localStorage.getItem("loggedInUser");
+    const userJson = sessionStorage.getItem("loggedInUser");
     if (!userJson) return "unknown";
     const user = JSON.parse(userJson);
     return user.user;
@@ -53,27 +53,27 @@ function getTeacherUsername() {
 
 async function loadSessionData() {
     const prefix = getUserPrefix();
-    branches = JSON.parse(localStorage.getItem(prefix + "branches")) || [];
-    debarred = JSON.parse(localStorage.getItem(prefix + "debarred")) || [];
-    roomConfigs = JSON.parse(localStorage.getItem(prefix + "roomConfigs")) || [];
-    seatingData = JSON.parse(localStorage.getItem(prefix + "seatingData")) || [];
-    const unallocated = JSON.parse(localStorage.getItem(prefix + "unallocated")) || [];
+    branches = JSON.parse(sessionStorage.getItem(prefix + "branches")) || [];
+    debarred = JSON.parse(sessionStorage.getItem(prefix + "debarred")) || [];
+    roomConfigs = JSON.parse(sessionStorage.getItem(prefix + "roomConfigs")) || [];
+    seatingData = JSON.parse(sessionStorage.getItem(prefix + "seatingData")) || [];
+    const unallocated = JSON.parse(sessionStorage.getItem(prefix + "unallocated")) || [];
     // No need to set global 'unallocated' here, as it's computed or loaded by prefix later
 
     const releaseTimeInput = document.getElementById("releaseTime");
     if (releaseTimeInput) {
-        releaseTimeInput.value = localStorage.getItem(prefix + "releaseTime") || "";
+        releaseTimeInput.value = sessionStorage.getItem(prefix + "releaseTime") || "";
     }
 }
 
 function saveToSessionStorage(key, data) {
     const prefix = getUserPrefix();
-    localStorage.setItem(prefix + key, JSON.stringify(data));
+    sessionStorage.setItem(prefix + key, JSON.stringify(data));
     
     // Invalidate seating if branches or rooms change
     if (key === "branches" || key === "roomConfigs") {
-        localStorage.removeItem(prefix + "seatingData");
-        localStorage.removeItem(prefix + "unallocated");
+        sessionStorage.removeItem(prefix + "seatingData");
+        sessionStorage.removeItem(prefix + "unallocated");
         seatingData = [];
     }
 }
@@ -118,7 +118,7 @@ async function login() {
 
     // Teacher Admin Default (for testing)
     if (role === "teacher" && username === "admin" && password === "admin") {
-        localStorage.setItem("loggedInUser", JSON.stringify({ user: "admin", role: "teacher" }));
+        sessionStorage.setItem("loggedInUser", JSON.stringify({ user: "admin", role: "teacher" }));
         window.location.href = "teacher.html";
         return;
     }
@@ -133,7 +133,7 @@ async function login() {
         const data = await response.json();
 
         if (data.success) {
-            localStorage.setItem("loggedInUser", JSON.stringify({
+            sessionStorage.setItem("loggedInUser", JSON.stringify({
                 user: data.user.username,
                 role: data.user.role
             }));
@@ -152,7 +152,7 @@ async function login() {
 }
 
 function checkAccess(pageRole) {
-    let loggedInUser = JSON.parse(localStorage.getItem("loggedInUser"));
+    let loggedInUser = JSON.parse(sessionStorage.getItem("loggedInUser"));
 
     if (!loggedInUser) {
         window.location.href = "index.html";
@@ -166,7 +166,7 @@ function checkAccess(pageRole) {
 }
 
 function logout() {
-    localStorage.removeItem("loggedInUser");
+    sessionStorage.removeItem("loggedInUser");
     window.location.href = "index.html";
 }
 
@@ -224,7 +224,7 @@ async function saveSession() {
             break;
         }
     }
-    localStorage.setItem("currentSession", currentSession);
+    sessionStorage.setItem("currentSession", currentSession);
     
     // Reload local data for the new session
     await loadSessionData();
@@ -252,7 +252,7 @@ function saveReleaseTime() {
     }
     
     const prefix = getUserPrefix();
-    localStorage.setItem(prefix + "releaseTime", timeValue);
+    sessionStorage.setItem(prefix + "releaseTime", timeValue);
     
     msg.innerText = "Timer set successfully!";
     msg.style.color = "#86efac";
@@ -261,7 +261,7 @@ function saveReleaseTime() {
 
 function clearReleaseTime() {
     const prefix = getUserPrefix();
-    localStorage.removeItem(prefix + "releaseTime");
+    sessionStorage.removeItem(prefix + "releaseTime");
     document.getElementById("releaseTime").value = "";
     const msg = document.getElementById("timerMsg");
     msg.innerText = "Timer cleared!";
@@ -640,7 +640,7 @@ function getRemainingStudents(branchMap) {
 
 // ===== SEATING GENERATION =====
 async function generateSeatingAdvanced() {
-    const storedRooms = JSON.parse(localStorage.getItem("roomConfigs")) || [];
+    const storedRooms = JSON.parse(sessionStorage.getItem("roomConfigs")) || [];
 
     if (storedRooms.length === 0) {
         alert("Please create and save room setup first.");
@@ -681,7 +681,7 @@ async function generateSeatingAdvanced() {
 
             saveToSessionStorage("seatingData", seatingData);
             saveToSessionStorage("unallocated", unallocatedStudents);
-            localStorage.setItem("unallocated", JSON.stringify(unallocatedStudents));
+            sessionStorage.setItem("unallocated", JSON.stringify(unallocatedStudents));
 
             displayRoomLayout();
             displayUnallocated();
@@ -719,7 +719,7 @@ async function generateSeatingAdvanced() {
     seatingData = newSeating;
     saveToSessionStorage("seatingData", seatingData);
     saveToSessionStorage("unallocated", unallocatedStudents);
-    localStorage.setItem("unallocated", JSON.stringify(unallocatedStudents));
+    sessionStorage.setItem("unallocated", JSON.stringify(unallocatedStudents));
 
     displayRoomLayout();
     displayUnallocated();
@@ -783,7 +783,7 @@ function displayRoomLayout() {
 }
 
 function showSeatDetails(roomIndex, seatIndex) {
-    const data = JSON.parse(localStorage.getItem("seatingData")) || [];
+    const data = JSON.parse(sessionStorage.getItem("seatingData")) || [];
     const room = data[roomIndex];
     if (!room) return;
 
@@ -808,7 +808,7 @@ function displayUnallocated(branchFilter = null) {
     if (!list) return;
 
     const prefix = getUserPrefix();
-    let data = JSON.parse(localStorage.getItem(prefix + "unallocated")) || [];
+    let data = JSON.parse(sessionStorage.getItem(prefix + "unallocated")) || [];
     
     if (branchFilter) {
         data = data.filter(s => s.branch === branchFilter);
@@ -843,7 +843,7 @@ function updateSummary() {
     const totalSeats = roomConfigs.reduce((sum, room) => sum + Number(room.seatCount || 0), 0);
     
     const prefix = getUserPrefix();
-    const unallocated = (JSON.parse(localStorage.getItem(prefix + "unallocated")) || []).length;
+    const unallocated = (JSON.parse(sessionStorage.getItem(prefix + "unallocated")) || []).length;
 
     summary.innerHTML = `
         <div class="summary-card">
@@ -874,7 +874,7 @@ function updateStatsRects() {
 
     const totalStudentsCount = generateStudentsFromBranches().length;
     const prefix = getUserPrefix();
-    const unallocated = JSON.parse(localStorage.getItem(prefix + "unallocated")) || [];
+    const unallocated = JSON.parse(sessionStorage.getItem(prefix + "unallocated")) || [];
     
     // Group unallocated by branch
     const unallocatedMap = {};
@@ -910,7 +910,7 @@ function updateAllocationChart() {
     const students = generateStudentsFromBranches();
     const totalStudentsCount = students.length;
     const prefix = getUserPrefix();
-    const unallocated = JSON.parse(localStorage.getItem(prefix + "unallocated")) || [];
+    const unallocated = JSON.parse(sessionStorage.getItem(prefix + "unallocated")) || [];
     const allocatedCount = totalStudentsCount - unallocated.length;
 
     // Group unallocated by branch
@@ -990,17 +990,17 @@ function findSeat() {
         }
         return;
     }
-    // Search through all keys in localStorage to find matching seating data across all teachers
+    // Search through all keys in sessionStorage to find matching seating data across all teachers
     let found = false;
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
+    for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
         if (key && key.includes("seatingData")) {
             // Determine session based on the key name
             let sessionName = "Unknown";
             if (key.toLowerCase().includes("morning")) sessionName = "Morning";
             if (key.toLowerCase().includes("afternoon")) sessionName = "Afternoon";
 
-            const data = JSON.parse(localStorage.getItem(key)) || [];
+            const data = JSON.parse(sessionStorage.getItem(key)) || [];
 
             for (let r = 0; r < data.length; r++) {
                 for (let c = 0; c < data[r].seats.length; c++) {
@@ -1015,7 +1015,7 @@ function findSeat() {
                         
                         // Check if a timer is set
                         const prefix = key.replace("seatingData", "");
-                        const releaseTimeStr = localStorage.getItem(prefix + "releaseTime");
+                        const releaseTimeStr = sessionStorage.getItem(prefix + "releaseTime");
                         
                         if (releaseTimeStr) {
                             const releaseTime = new Date();
@@ -1113,15 +1113,15 @@ function clearAllData() {
     const sessions = ["morning_", "afternoon_"];
     sessions.forEach(session => {
         const prefix = teacher + "_" + session;
-        localStorage.removeItem(prefix + "branches");
-        localStorage.removeItem(prefix + "debarred");
-        localStorage.removeItem(prefix + "roomConfigs");
-        localStorage.removeItem(prefix + "seatingData");
-        localStorage.removeItem(prefix + "unallocated");
-        localStorage.removeItem(prefix + "releaseTime");
+        sessionStorage.removeItem(prefix + "branches");
+        sessionStorage.removeItem(prefix + "debarred");
+        sessionStorage.removeItem(prefix + "roomConfigs");
+        sessionStorage.removeItem(prefix + "seatingData");
+        sessionStorage.removeItem(prefix + "unallocated");
+        sessionStorage.removeItem(prefix + "releaseTime");
     });
     
-    localStorage.removeItem("unallocated"); // Global fallback
+    sessionStorage.removeItem("unallocated"); // Global fallback
 
     branches = [];
     debarred = [];
@@ -1149,9 +1149,9 @@ function loadStudentBranches() {
     let allBranches = [];
     
     // Find all branches across all teachers and sessions
-    for (let key in localStorage) {
+    for (let key in sessionStorage) {
         if (key.endsWith("_branches")) {
-            const branches = JSON.parse(localStorage.getItem(key)) || [];
+            const branches = JSON.parse(sessionStorage.getItem(key)) || [];
             allBranches = allBranches.concat(branches);
         }
     }
